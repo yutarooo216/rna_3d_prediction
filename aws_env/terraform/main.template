@@ -1,0 +1,14 @@
+# aws
+provider "aws" {
+  region = "${REGION}"
+}
+
+# backend
+terraform {
+  backend "s3" {
+    bucket  = "${BACKEND_BUKET}"
+    key     = "rna_3d_predictions/setup.tfstate"
+    region  = "${REGION}"
+    encrypt = true
+  }
+}

@@ -1,0 +1,25 @@
+region: ""
+account_id: ""
+dns:
+  domain: 
+  owner_id: 
+deployment:
+  repository: ""
+  tag: ""
+  name_space: "my-app"
+  service_name: "my-app-service"
+  service_account_name: ""
+  labels: "app: my-app"
+  replicas: 1
+namespace: my-app
+pvc_checkpoint: "pvc-checkpoint"
+pvc_components: "pvc-components"
+pvc_output: "pvc-output"
+volume:
+  prefix_checkpoint: "checkpoints/"
+  prefix_components: "components/"
+  prefix_output: "output/"
+  bucket_name: ""
+  pv_checkpoint: "pv-checkpoint"
+  pv_components: "pv-components"
+  pv_output: "pv-output"

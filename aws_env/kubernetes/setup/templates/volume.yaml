@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.volume.pv_checkpoint }}
+  namespace: kube-system
+spec:
+  capacity:
+    storage: 1200Gi # Ignored, required
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: {{ .Values.namespace }} # Namespace is required even though it's in "default" namespace.
+    name: {{ .Values.pvc_checkpoint }} # Name of your PVC
+  mountOptions:
+    - allow-delete
+    - region {{ .Values.region }}
+    - prefix {{ .Values.volume.prefix_checkpoint }}
+  csi:
+    driver: s3.csi.aws.com # Required
+    volumeHandle: s3-csi-driver-volume-checkpoint # Must be unique
+    volumeAttributes:
+      bucketName: {{ .Values.volume.bucket_name }}
+      roleARN: arn:aws:iam::{{ .Values.account_id }}:role/s3-controller
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.volume.pv_components }}
+  namespace: kube-system
+spec:
+  capacity:
+    storage: 1200Gi # Ignored, required
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: {{ .Values.namespace }} # Namespace is required even though it's in "default" namespace.
+    name: {{ .Values.pvc_components }} # Name of your PVC
+  mountOptions:
+    - allow-delete
+    - region {{ .Values.region }}
+    - prefix {{ .Values.volume.prefix_components }}
+  csi:
+    driver: s3.csi.aws.com # Required
+    volumeHandle: s3-csi-driver-volume-components # Must be unique
+    volumeAttributes:
+      bucketName: {{ .Values.volume.bucket_name }}
+      roleARN: arn:aws:iam::{{ .Values.account_id }}:role/s3-controller
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.volume.pv_output }}
+  namespace: kube-system
+spec:
+  capacity:
+    storage: 1200Gi # Ignored, required
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: {{ .Values.namespace }} # Namespace is required even though it's in "default" namespace.
+    name: {{ .Values.pvc_output }} # Name of your PVC
+  mountOptions:
+    - allow-delete
+    - region {{ .Values.region }}
+    - prefix {{ .Values.volume.prefix_output }}
+  csi:
+    driver: s3.csi.aws.com # Required
+    volumeHandle: s3-csi-driver-volume-output # Must be unique
+    volumeAttributes:
+      bucketName: {{ .Values.volume.bucket_name }}
+      roleARN: arn:aws:iam::{{ .Values.account_id }}:role/s3-controller
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc_checkpoint }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  resources:
+    requests:
+      storage: 1200Gi # Ignored, required
+  volumeName: {{ .Values.volume.pv_checkpoint }} # Name of your PV
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc_components }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  resources:
+    requests:
+      storage: 1200Gi # Ignored, required
+  volumeName: {{ .Values.volume.pv_components }} # Name of your PV
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc_output }}
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  storageClassName: "" # Required for static provisioning
+  resources:
+    requests:
+      storage: 1200Gi # Ignored, required
+  volumeName: {{ .Values.volume.pv_output }} # Name of your PV

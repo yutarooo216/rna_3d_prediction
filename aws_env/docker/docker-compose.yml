@@ -1,0 +1,10 @@
+version: "3.3"
+services:
+  aws:
+    build: .
+    stdin_open: true        # `-i` と同様の効果
+    tty: true               # `-t` と同様の効果
+    volumes:
+      - ../:/home/user1
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["/bin/bash"]

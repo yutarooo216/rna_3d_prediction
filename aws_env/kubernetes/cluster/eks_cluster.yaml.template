@@ -1,0 +1,92 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: my-cluster
+  region: ap-northeast-1
+  version: "1.31"
+
+vpc:
+  subnets:
+    private:
+      ap-northeast-1a: { id: ${SUBNET_ID_1A} }
+      ap-northeast-1c: { id: ${SUBNET_ID_1C} }
+nodeGroups:
+  - name: test-node-0
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 4
+    privateNetworking: true
+    instancesDistribution:
+      maxPrice: 0.2
+      instanceTypes: ["t2.medium", "t3.medium", "t3a.medium", "t4g.medium", "m5.large"]
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotInstancePools: 5
+    iam:
+      withAddonPolicies:
+        autoscaler: true
+        cloudWatch: true
+    tags:
+      k8s.io/cluster-autoscaler/enabled: 'true'
+      k8s.io/cluster-autoscaler/test: owned
+  - name: gpu-nodes
+    desiredCapacity: 0
+    minSize: 0
+    maxSize: 2
+    privateNetworking: true
+    instancesDistribution:
+      maxPrice: 1.0
+      instanceTypes: ["g4dn.xlarge", "g4dn.2xlarge"]
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotInstancePools: 2
+    taints:
+      - key: nvidia.com/gpu
+        value: present
+        effect: NoSchedule
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        cloudWatch: true
+        efs: true
+    labels:
+      node-type: gpu
+    tags:
+      k8s.io/cluster-autoscaler/enabled: 'true'
+      k8s.io/cluster-autoscaler/node-template/label/node-type: gpu
+      k8s.io/cluster-autoscaler/test: owned
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: aws-load-balancer-controller
+        namespace: kube-system
+      roleName: AmazonEKSLoadBalancerControllerRole
+      attachPolicyARNs:
+        - arn:aws:iam::${ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy 
+    - metadata:
+        name: cluster-autoscaler
+        namespace: kube-system
+      roleName: ClusterAutoscalerRole
+      attachPolicyARNs:
+        - arn:aws:iam::${ACCOUNT_ID}:policy/AWSAutoScaleIAMPolicy
+    - metadata:
+        name: external-dns
+        namespace: kube-system
+      roleName: ExternalDnsRole
+      attachPolicyARNs:
+        - arn:aws:iam::${ACCOUNT_ID}:policy/ExternalDnsIAMPolicy
+    - metadata:
+        name: ecr
+        namespace: kube-system
+      roleName: ECR
+      attachPolicyARNs:
+        - arn:aws:iam::${ACCOUNT_ID}:policy/ECRPolicy
+    - metadata:
+        name: s3-controller
+        namespace: kube-system
+      roleName: s3-controller
+      attachPolicyARNs:
+        - arn:aws:iam::${ACCOUNT_ID}:policy/S3ControllerPolicy

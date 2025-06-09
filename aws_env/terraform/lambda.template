@@ -1,0 +1,95 @@
+# LambdaのIAMロール
+resource "aws_iam_role" "lambda_exec" {
+  name = "lambda-exec-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Principal = { Service = "lambda.amazonaws.com" },
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+# LambdaにCloudWatch Logsの許可を付与
+resource "aws_iam_role_policy_attachment" "lambda_logs" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# LambdaにS3/SES許可
+resource "aws_iam_role_policy" "lambda_policy" {
+  name = "lambda-policy"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource = [
+          "arn:aws:s3:::${BUCKET_NAME}",           # ListBucket に必要（バケット自体）
+          "arn:aws:s3:::${BUCKET_NAME}/*"          # GetObject に必要（オブジェクト）
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = ["ses:SendEmail"],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Lambda関数
+resource "aws_lambda_function" "send_zip_email" {
+  function_name = "send-zip-email"
+  role          = aws_iam_role.lambda_exec.arn
+  runtime       = "python3.11"
+  handler       = "lambda_function.lambda_handler"
+  filename      = "lambda_function.zip"
+  source_code_hash = filebase64sha256("lambda_function.zip")
+  timeout       = 60
+  
+  environment {
+  variables = {
+    DOMAIN = "${DOMAIN}"
+    }
+  }
+}
+
+# LambdaのS3トリガー
+resource "aws_s3_bucket_notification" "notify_lambda" {
+  bucket = "${BUCKET_NAME}"
+
+  lambda_function {
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "output/"
+    filter_suffix       = ".zip"
+    lambda_function_arn = aws_lambda_function.send_zip_email.arn
+  }
+
+  depends_on = [aws_lambda_permission.allow_s3]
+}
+
+# S3 から Lambda を呼び出す許可
+resource "aws_lambda_permission" "allow_s3" {
+  statement_id  = "AllowS3Invoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.send_zip_email.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = "arn:aws:s3:::${BUCKET_NAME}"
+}
+
+# SESの設定
+resource "aws_ses_domain_identity" "my-domain" {
+  domain = "${DOMAIN}"
+}
+
+resource "aws_ses_domain_dkim" "my-domain" {
+  domain = aws_ses_domain_identity.my-domain.domain
+}

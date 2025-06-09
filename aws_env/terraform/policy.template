@@ -1,0 +1,157 @@
+data "http" "alb_policy_json" {
+  url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.11.0/docs/install/iam_policy.json"
+}
+
+resource "aws_iam_policy" "alb" {
+  name   = "AWSLoadBalancerControllerIAMPolicy"
+  policy = data.http.alb_policy_json.body
+}
+
+data "aws_iam_policy_document" "auto_scale" {
+  statement {
+    sid = "Autoscaling"
+
+    actions = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations",
+      "autoscaling:DescribeScalingActivities",
+      "autoscaling:DescribeTags",
+      "ec2:DescribeInstanceTypes",
+      "ec2:DescribeLaunchTemplateVersions",
+      "autoscaling:SetDesiredCapacity",
+      "autoscaling:TerminateInstanceInAutoScalingGroup",
+      "ec2:DescribeImages",
+      "ec2:GetInstanceTypesFromInstanceRequirements",
+      "eks:DescribeNodegroup"
+    ]
+
+    #checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    #checkov:skip=CKV_AWS_356: Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions
+    resources = [
+      "*",
+    ]
+
+    effect = "Allow"
+  }
+}
+
+resource "aws_iam_policy" "auto_scale" {
+  name   = "AWSAutoScaleIAMPolicy"
+  policy = data.aws_iam_policy_document.auto_scale.json
+}
+
+# external dns policy
+resource "aws_iam_policy" "ExternalDnsIAMPolicy" {
+  name   = "ExternalDnsIAMPolicy"
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+POLICY
+}
+
+# IAM Policy for ECR Access
+resource "aws_iam_policy" "ecr_access_policy" {
+  name        = "ecr-access-policy"
+  description = "ECR access policy for pushing images"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart"
+        ]
+        Resource = [
+          "*"
+        ]
+      }
+    ]
+  })
+}
+
+# ECR policy
+# external dns policy
+resource "aws_iam_policy" "ECRPolicy" {
+  name   = "ECRPolicy"
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer"
+      ],
+      "Resource": [
+      "*"
+      ]
+    }
+  ]
+}
+
+POLICY
+}
+
+# S3 CSI Driver policy
+resource "aws_iam_policy" "S3ControllerPolicy" {
+  name   = "S3ControllerPolicy"
+  policy = <<POLICY
+{
+   "Version": "2012-10-17",
+   "Statement": [
+        {
+            "Sid": "MountpointFullBucketAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::${BUCKET_NAME}"
+            ]
+        },
+        {
+            "Sid": "MountpointFullObjectAccess",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:AbortMultipartUpload",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::${BUCKET_NAME}/*"
+            ]
+        }
+   ]
+  }
+POLICY
+}
