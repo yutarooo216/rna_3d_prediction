@@ -6,7 +6,7 @@ provider "aws" {
 # backend
 terraform {
   backend "s3" {
-    bucket  = "${BACKEND_BUKET}"
+    bucket  = "${BACKEND_BUCKET}"
     key     = "rna_3d_predictions/setup.tfstate"
     region  = "${REGION}"
     encrypt = true
