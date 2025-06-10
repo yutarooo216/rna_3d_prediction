@@ -62,3 +62,26 @@ $ docker compose up -d
 Enter your RNA sequence and email address, then click Submit to start the prediction.
   
 ![frontend_image](images/frontend_image.png)
+
+## Citation
+
+This project makes use of [**Protenix**](https://doi.org/10.1101/2025.01.08.631967), an open-source reproduction of AlphaFold3.  
+If you use this project in your research, please also consider citing the Protenix paper:
+
+> **Chen, Xinshi**, **Zhang, Yuxuan**, **Lu, Chan**, **Ma, Wenzhi**, **Guan, Jiaqi**,  
+> **Gong, Chengyue**, **Yang, Jincai**, **Zhang, Hanyu**, **Zhang, Ke**, **Wu, Shenghao**,  
+> **Zhou, Kuangqi**, **Yang, Yanping**, **Liu, Zhenyu**, **Wang, Lan**, **Shi, Bo**,  
+> **Shi, Shaochen**, and **Xiao, Wenzhi**.  
+> _Protenix - Advancing Structure Prediction Through a Comprehensive AlphaFold3 Reproduction_.  
+> bioRxiv, 2025. [https://doi.org/10.1101/2025.01.08.631967](https://doi.org/10.1101/2025.01.08.631967)
+
+#### BibTeX
+
+```bibtex
+@article{chen2025protenix,
+  title={Protenix - Advancing Structure Prediction Through a Comprehensive AlphaFold3 Reproduction},
+  author={Chen, Xinshi and Zhang, Yuxuan and Lu, Chan and Ma, Wenzhi and Guan, Jiaqi and Gong, Chengyue and Yang, Jincai and Zhang, Hanyu and Zhang, Ke and Wu, Shenghao and Zhou, Kuangqi and Yang, Yanping and Liu, Zhenyu and Wang, Lan and Shi, Bo and Shi, Shaochen and Xiao, Wenzhi},
+  year={2025},
+  doi = {10.1101/2025.01.08.631967},
+  journal = {bioRxiv}
+}
