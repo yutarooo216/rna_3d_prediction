@@ -21,6 +21,12 @@ $ docker compose up -d
 $ docker compose exec -e COLUMNS=$COLUMNS aws bash
 $ aws configure
 ```
+If you're using GitHub Actions for continuous deployment (CD), you also need to configure the following repository secrets in your GitHub repository settings:  
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+- AWS_REGION  
+
+These secrets are required to authenticate with AWS services from within your GitHub Actions workflow.
 
 ### 2. Backend Setup
 Set your custom S3 buckets as environment variables. Replace the following with your own bucket names:
