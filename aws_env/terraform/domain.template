@@ -1,0 +1,39 @@
+# Route 53のホストゾーンを作成（または管理）
+resource "aws_route53_zone" "example" {
+  name = "${DOMAIN}"
+}
+
+# ACM証明書の作成
+resource "aws_acm_certificate" "example" {
+  domain_name               = "*.${DOMAIN}"
+  subject_alternative_names = []
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ACM証明書の検証用CNAMEレコードをRoute 53に作成
+resource "aws_route53_record" "example_certificate" {
+  name    = tolist(aws_acm_certificate.example.domain_validation_options)[0].resource_record_name
+  type    = tolist(aws_acm_certificate.example.domain_validation_options)[0].resource_record_type
+  records = [tolist(aws_acm_certificate.example.domain_validation_options)[0].resource_record_value]
+  zone_id = resource.aws_route53_zone.example.id
+  ttl     = 60
+}
+
+# ACM証明書の検証
+resource "aws_acm_certificate_validation" "example" {
+  certificate_arn         = aws_acm_certificate.example.arn
+  validation_record_fqdns = [aws_route53_record.example_certificate.fqdn]
+}
+
+resource "aws_route53_record" "dkim_records" {
+  count   = 3
+  zone_id = aws_route53_zone.example.zone_id
+  name    = "${aws_ses_domain_dkim.my-domain.dkim_tokens[count.index]}._domainkey.${aws_ses_domain_dkim.my-domain.domain}"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["${aws_ses_domain_dkim.my-domain.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}

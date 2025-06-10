@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: {{ .Values.deployment.name_space }}
+  labels:
+    {{ .Values.deployment.labels }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        {{ .Values.deployment.labels }}
+    spec:
+      containers:
+      - name: my-app-container
+        image: {{ .Values.account_id }}.dkr.ecr.{{ .Values.region }}.amazonaws.com/{{ .Values.deployment.repository }}:{{ .Values.deployment.tag }}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: {{ .Values.region }}
+        - name: ACCOUNT_ID
+          value: "{{ .Values.account_id }}"
+        imagePullPolicy: Always
+      serviceAccountName: {{ .Values.deployment.service_account_name }}
+      # imagePullSecrets:
+      # - name: docker-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.deployment.service_name }}
+  namespace: {{ .Values.deployment.name_space }}
+  labels:
+    {{ .Values.deployment.labels }}
+spec:
+  type: ClusterIP
+  selector:
+    app: my-app
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app-ingress
+  namespace: {{ .Values.deployment.name_space }}
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: my-app-group
+    kubernetes.io/ingress.class: alb
+spec:
+  rules:
+  - host: {{ .Values.dns.domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.deployment.service_name }}
+            port:
+              number: 80

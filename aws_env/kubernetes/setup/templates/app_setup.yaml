@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s3-controller
+  namespace: my-app
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::{{ .Values.account_id }}:role/s3-controller
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-role
+  namespace: my-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: my-app
+  name: secrets-access
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs/status"]  # jobs/statusリソースへの権限を追加
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: my-app
+  name: secrets-access-binding
+subjects:
+  - kind: ServiceAccount
+    name: cluster-role
+    namespace: my-app
+roleRef:
+  kind: Role
+  name: secrets-access
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-cluster-role
+rules:
+  # persistentvolumesリソースへの権限
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "patch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create"] 
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csidrivers"]
+    verbs: ["get", "list", "watch", "create"]
+  # daemonsetsリソースへの権限
+  - apiGroups: ["apps"]
+    resources: ["daemonsets"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+  - apiGroups: ["node.k8s.io"]
+    resources: ["runtimeclasses"]
+    verbs: ["get", "list", "watch", "create", "patch"]
+  # その他の必要なリソースへの権限
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["create", "get", "list", "watch", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: cluster-role
+    namespace: my-app
+roleRef:
+  kind: ClusterRole
+  name: app-cluster-role
+  apiGroup: rbac.authorization.k8s.io

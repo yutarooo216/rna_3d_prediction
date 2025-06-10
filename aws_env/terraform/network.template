@@ -1,0 +1,142 @@
+# vpc
+resource "aws_vpc" "example" {
+  cidr_block           = "10.1.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "example"
+  }
+}
+
+# public subnet 
+resource "aws_subnet" "public_0" {
+  vpc_id                  = aws_vpc.example.id
+  cidr_block              = "10.1.16.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${REGION}a"
+  tags = {
+    Name                              = "public_0"
+    "kubernetes.io/role/elb"          = 1
+    "kubernetes.io/role/internal-elb" = 1
+  }
+}
+
+resource "aws_subnet" "public_1" {
+  vpc_id                  = aws_vpc.example.id
+  cidr_block              = "10.1.32.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${REGION}c"
+  tags = {
+    Name                              = "public_1"
+    "kubernetes.io/role/elb"          = 1
+    "kubernetes.io/role/internal-elb" = 1
+  }
+}
+
+# internet gateway
+resource "aws_internet_gateway" "example" {
+  vpc_id = aws_vpc.example.id
+  tags = {
+    Name = "igw-test"
+  }
+}
+
+# route table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.example.id
+}
+
+resource "aws_route" "public" {
+  route_table_id         = aws_route_table.public.id
+  gateway_id             = aws_internet_gateway.example.id
+  destination_cidr_block = "0.0.0.0/0"
+}
+
+# attach public subnet
+resource "aws_route_table_association" "public_0" {
+  subnet_id      = aws_subnet.public_0.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_1" {
+  subnet_id      = aws_subnet.public_1.id
+  route_table_id = aws_route_table.public.id
+}
+
+# plivate subnet
+resource "aws_subnet" "plivate_0" {
+  vpc_id                  = aws_vpc.example.id
+  cidr_block              = "10.1.64.0/24"
+  map_public_ip_on_launch = false
+  availability_zone       = "${REGION}a"
+  tags = {
+    Name = "eks-subnet-1a"
+    "kubernetes.io/cluster/test" = "owned"
+  }
+}
+
+# plivate subnet
+resource "aws_subnet" "plivate_1" {
+  vpc_id                  = aws_vpc.example.id
+  cidr_block              = "10.1.128.0/24"
+  map_public_ip_on_launch = false
+  availability_zone       = "${REGION}c"
+  tags = {
+    Name = "eks-subnet-1c"
+    "kubernetes.io/cluster/test" = "owned"
+  }
+}
+
+# plivate route
+resource "aws_route_table" "plivate_0" {
+  vpc_id = aws_vpc.example.id
+}
+
+resource "aws_route_table" "plivate_1" {
+  vpc_id = aws_vpc.example.id
+}
+
+# plivate association
+resource "aws_route_table_association" "plivate_0" {
+  subnet_id      = aws_subnet.plivate_0.id
+  route_table_id = aws_route_table.plivate_0.id
+}
+
+resource "aws_route_table_association" "plivate_1" {
+  subnet_id      = aws_subnet.plivate_1.id
+  route_table_id = aws_route_table.plivate_1.id
+}
+
+# eip
+resource "aws_eip" "nat_gateway_0" {
+  domain = "vpc"
+}
+
+resource "aws_eip" "nat_gateway_1" {
+  domain = "vpc"
+}
+
+# nat
+resource "aws_nat_gateway" "example_0" {
+  allocation_id = aws_eip.nat_gateway_0.id
+  subnet_id     = aws_subnet.public_0.id
+}
+
+resource "aws_nat_gateway" "example_1" {
+  allocation_id = aws_eip.nat_gateway_1.id
+  subnet_id     = aws_subnet.public_1.id
+}
+
+# route
+resource "aws_route" "plivate_0" {
+  route_table_id         = aws_route_table.plivate_0.id
+  nat_gateway_id         = aws_nat_gateway.example_0.id
+  destination_cidr_block = "0.0.0.0/0"
+}
+
+resource "aws_route" "plivate_1" {
+  route_table_id         = aws_route_table.plivate_1.id
+  nat_gateway_id         = aws_nat_gateway.example_1.id
+  destination_cidr_block = "0.0.0.0/0"
+}
