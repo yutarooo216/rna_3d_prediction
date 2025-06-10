@@ -29,11 +29,14 @@ If you're using GitHub Actions for continuous deployment (CD), you also need to 
 These secrets are required to authenticate with AWS services from within your GitHub Actions workflow.
 
 ### 2. Backend Setup
-Set your custom S3 buckets as environment variables. Replace the following with your own bucket names:
+Set the following environment variables to configure your deployment. Replace the example values with your own settings:
 ```bash
 # S3 bucket settings for backend
 $ BACKEND_BUCKET=my-terraform-backend-bucket-name     # for Terraform backend
 $ BUCKET_NAME=rna-3d-predictions                      # for storing RNA prediction results
+
+# Domain name used for your application or API (e.g., for ingress or Route53)
+$ DOMAIN=example.com
 ```
 Now, set up the backend infrastructure using the following steps:
 ```bash
