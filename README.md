@@ -8,6 +8,20 @@ A Single Page Application (SPA) using AWS that predicts the 3D structure of RNA 
 - Infrastructure is managed using Terraform (IaC), and GitHub Actions is used for Continuous Deployment (CD).
 - The frontend is built with React.
 
+## API Dependency
+
+This project depends on a separate backend API available at [**yutarooo216/api**](https://github.com/yutarooo216/api.git).  
+The API handles RNA 3D structure prediction requests, manages job queues, and returns prediction results.
+
+To run this application successfully, make sure you clone and deploy the API as described in its own repository.
+
+```bash
+# Clone the API repository
+$ git clone https://github.com/yutarooo216/api.git
+$ cd api
+```
+Please follow the setup instructions in that repository to ensure the API is properly deployed before using this frontend.
+
 ## Usage Instructions
 
 ### 1. Backend Environment Setup
